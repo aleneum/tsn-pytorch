@@ -14,7 +14,7 @@ from ops import ConsensusModule
 # options
 parser = argparse.ArgumentParser(
     description="Standard video-level testing")
-parser.add_argument('dataset', type=str, choices=['ucf101', 'hmdb51', 'kinetics'])
+parser.add_argument('num_class', type=int)
 parser.add_argument('modality', type=str, choices=['RGB', 'Flow', 'RGBDiff'])
 parser.add_argument('test_list', type=str)
 parser.add_argument('weights', type=str)
@@ -32,18 +32,10 @@ parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--gpus', nargs='+', type=int, default=None)
 parser.add_argument('--flow_prefix', type=str, default='')
-
 args = parser.parse_args()
 
 
-if args.dataset == 'ucf101':
-    num_class = 101
-elif args.dataset == 'hmdb51':
-    num_class = 51
-elif args.dataset == 'kinetics':
-    num_class = 400
-else:
-    raise ValueError('Unknown dataset '+args.dataset)
+num_class = args.num_class
 
 net = TSN(num_class, 1, args.modality,
           base_model=args.arch,

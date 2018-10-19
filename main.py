@@ -20,16 +20,7 @@ best_prec1 = 0
 def main():
     global args, best_prec1
     args = parser.parse_args()
-
-    if args.dataset == 'ucf101':
-        num_class = 101
-    elif args.dataset == 'hmdb51':
-        num_class = 51
-    elif args.dataset == 'kinetics':
-        num_class = 400
-    else:
-        raise ValueError('Unknown dataset '+args.dataset)
-
+    num_class = args.num_class
     model = TSN(num_class, args.num_segments, args.modality,
                 base_model=args.arch,
                 consensus_type=args.consensus_type, dropout=args.dropout, partial_bn=not args.no_partialbn)
@@ -121,7 +112,7 @@ def main():
         adjust_learning_rate(optimizer, epoch, args.lr_steps)
 
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch)
+        train(train_loader, model, criterion, optimizer, epoch, args.report_precision)
 
         # evaluate on validation set
         if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:
@@ -138,12 +129,12 @@ def main():
             }, is_best)
 
 
-def train(train_loader, model, criterion, optimizer, epoch):
+def train(train_loader, model, criterion, optimizer, epoch, report_precision=None):
+    report_precision = [1, 5] if report_precision is None else report_precision
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+    tops = [AverageMeter() for k in report_precision]
 
     if args.no_partialbn:
         model.module.partialBN(False)
@@ -167,11 +158,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1,5))
+        precs = accuracy(output.data, target, topk=report_precision)
         losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
-
+        for top, prec in  zip(tops, precs):
+            top.update(prec[0], input.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -190,21 +180,23 @@ def train(train_loader, model, criterion, optimizer, epoch):
         end = time.time()
 
         if i % args.print_freq == 0:
-            print(('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   epoch, i, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))
+            state = ('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
+                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                     'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t').format(
+                         epoch, i, len(train_loader), batch_time=batch_time, 
+                         data_time=data_time, loss=losses)
+            for idx, val in enumerate(report_precision):
+                state += 'Prec@{rank} {top.val:.3f} ({top.avg:.3f})\t'.format(
+                    rank=val, top=tops[idx])
+            print(state)
 
 
-def validate(val_loader, model, criterion, iter, logger=None):
+def validate(val_loader, model, criterion, iter, logger=None, report_precision=None):
+    report_precision = [1, 5] if report_precision is None else sorted(report_precision)
     batch_time = AverageMeter()
     losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+    tops = [AverageMeter() for k in report_precision]
 
     # switch to evaluate mode
     model.eval()
@@ -218,32 +210,32 @@ def validate(val_loader, model, criterion, iter, logger=None):
         # compute output
         output = model(input_var)
         loss = criterion(output, target_var)
-
+       
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1,5))
-
+        precs = accuracy(output.data, target, topk=report_precision)
         losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
+        for top, prec in  zip(tops, precs):
+            top.update(prec[0], input.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
         if i % args.print_freq == 0:
-            print(('Test: [{0}/{1}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   i, len(val_loader), batch_time=batch_time, loss=losses,
-                   top1=top1, top5=top5)))
-
-    print(('Testing Results: Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Loss {loss.avg:.5f}'
-          .format(top1=top1, top5=top5, loss=losses)))
-
-    return top1.avg
-
+            state = ('Test: [{0}/{1}]\t'
+                    'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                    'Loss {loss.val:.4f} ({loss.avg:.4f})\t').format(
+                        i, len(val_loader), batch_time=batch_time, loss=losses)
+            for idx, val in enumerate(report_precision):
+                state += 'Prec@{rank} {top.val:.3f} ({top.avg:.3f})\t'.format(
+                    rank=val, top=tops[idx])
+            print(state)
+    
+    result = 'Testing Results: '
+    for idx, val in enumerate(report_precision):
+        result += 'Prec@{rank} {top.avg:.3f} '.format(rank=val, top=tops[idx])
+    result += 'Loss {loss.avg:.5f}'.format(loss=losses)))
+    return top[0].avg
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     filename = '_'.join((args.snapshot_pref, args.modality.lower(), filename))
