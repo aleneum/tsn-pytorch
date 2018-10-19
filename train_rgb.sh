@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export TORCH_HOME='/tsn_pytorch'
+
 # parameters: num_class num_gpu batch_size
 
 python /tsn_pytorch/main.py $1 RGB \
