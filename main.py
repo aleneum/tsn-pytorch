@@ -184,8 +184,8 @@ def train(train_loader, model, criterion, optimizer, epoch, report_precision=Non
                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                      'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t').format(
-                         epoch, i, len(train_loader), batch_time=batch_time, 
-                         data_time=data_time, loss=losses)
+                         epoch, i, len(train_loader), batch_time=batch_time,
+                         data_time=data_time, loss=losses, lr=optimizer.param_groups[-1]['lr'])
             for idx, val in enumerate(report_precision):
                 state += 'Prec@{rank} {top.val:.3f} ({top.avg:.3f})\t'.format(
                     rank=val, top=tops[idx])
@@ -234,7 +234,7 @@ def validate(val_loader, model, criterion, iter, logger=None, report_precision=N
     result = 'Testing Results: '
     for idx, val in enumerate(report_precision):
         result += 'Prec@{rank} {top.avg:.3f} '.format(rank=val, top=tops[idx])
-    result += 'Loss {loss.avg:.5f}'.format(loss=losses)))
+    result += 'Loss {loss.avg:.5f}'.format(loss=losses)
     return top[0].avg
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):

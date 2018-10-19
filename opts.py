@@ -53,7 +53,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('--gpus', nargs='+', type=int, default=None)
 parser.add_argument('--flow_prefix', default="", type=str)
-parser.add_argument('--report_values', nargs='+', type=int, default=None)
+parser.add_argument('--report_precision', nargs='+', type=int, default=None)
 
 
 
