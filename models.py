@@ -93,7 +93,7 @@ TSN Configurations:
                 self.input_std = self.input_std + [np.mean(self.input_std) * 2] * 3 * self.new_length
         elif base_model == 'BNInception':
             import tf_model_zoo
-            self.base_model = getattr(tf_model_zoo, base_model)()
+            self.base_model = getattr(tf_model_zoo, base_model)(model_path='/tsn_pytorch/tf_model_zoo/bninception/bn_inception.yaml')
             self.base_model.last_layer_name = 'fc'
             self.input_size = 224
             self.input_mean = [104, 117, 128]
