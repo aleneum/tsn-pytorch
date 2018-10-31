@@ -235,7 +235,7 @@ def validate(val_loader, model, criterion, iter, logger=None, report_precision=N
     for idx, val in enumerate(report_precision):
         result += 'Prec@{rank} {top.avg:.3f} '.format(rank=val, top=tops[idx])
     result += 'Loss {loss.avg:.5f}'.format(loss=losses)
-    return top[0].avg
+    return tops[0].avg
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     filename = '_'.join((args.snapshot_pref, args.modality.lower(), filename))
