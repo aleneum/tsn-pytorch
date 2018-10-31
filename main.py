@@ -238,7 +238,7 @@ def validate(val_loader, model, criterion, iter, logger=None, report_precision=N
     return tops[0].avg
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    filename = '_'.join((args.snapshot_pref, args.modality.lower(), state['epoch'], filename))
+    filename = '_'.join((args.snapshot_pref, args.modality.lower(), str(state['epoch']), filename))
     torch.save(state, filename)
     if is_best:
         best_name = '_'.join((args.snapshot_pref, args.modality.lower(), 'model_best.pth.tar'))
