@@ -73,12 +73,12 @@ data_loader = torch.utils.data.DataLoader(
                        GroupNormalize(net.input_mean, net.input_std),
                    ])),
         batch_size=1, shuffle=False,
-        num_workers=args.workers * 2, pin_memory=True)
+        num_workers=args.workers, pin_memory=True)
 
 if args.gpus is not None:
-    devices = [args.gpus[i] for i in range(args.workers)]
+    devices = [args.gpus[i] for i in range(min(1, args.workers // 2))]
 else:
-    devices = list(range(args.workers))
+    devices = list(range(min(1, args.workers // 2)))
 
 
 net = torch.nn.DataParallel(net.cuda(devices[0]), device_ids=devices)
