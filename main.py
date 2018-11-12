@@ -20,6 +20,8 @@ best_prec1 = 0
 def main():
     global args, best_prec1
     args = parser.parse_args()
+    if not args.epochs:
+        args.epochs = 80 if args.modality == "RGB" else 340
     num_class = args.num_class
     model = TSN(num_class, args.num_segments, args.modality,
                 base_model=args.arch,
