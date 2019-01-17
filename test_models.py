@@ -137,7 +137,6 @@ cls_hit = np.diag(cf)
 cls_acc = cls_hit / cls_cnt
 
 print(cls_acc)
-
 print('Accuracy {:.02f}%'.format(np.mean(cls_acc) * 100))
 
 if args.save_scores is not None:
@@ -154,7 +153,10 @@ if args.save_scores is not None:
         idx = order_dict[name_list[i]]
         reorder_output[idx] = output[i]
         reorder_label[idx] = video_labels[i]
-
+    
+    # convert tensors into int class labels;
+    # this allows to evaluate scores even when torch is not present
+    reorder_output[:, 1] = np.array(reorder_output[:, 1], dtype=np.int)
     np.savez(args.save_scores, scores=reorder_output, labels=reorder_label)
 
 
