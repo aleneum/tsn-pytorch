@@ -156,6 +156,7 @@ if args.save_scores is not None:
     
     # convert tensors into int class labels;
     # this allows to evaluate scores even when torch is not present
+    reorder_output = np.array(reorder_output)
     reorder_output[:, 1] = np.array(reorder_output[:, 1], dtype=np.int)
     np.savez(args.save_scores, scores=reorder_output, labels=reorder_label)
 
